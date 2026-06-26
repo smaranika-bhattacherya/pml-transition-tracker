@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     await sendOtpEmail(normalized, otp)
   } catch (e: any) {
     console.error('Email error in send-otp:', e.message)
-    return NextResponse.json({ error: 'Failed to send email — check RESEND_API_KEY env var.' }, { status: 500 })
+    return NextResponse.json({ error: `Failed to send email: ${e.message}` }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })
