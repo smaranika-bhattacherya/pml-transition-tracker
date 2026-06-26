@@ -18,13 +18,23 @@ export async function POST(request: NextRequest) {
   const otp = String(randomInt(100000, 999999))
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
-  await sql`
-    INSERT INTO otps (email, code, expires_at)
-    VALUES (${normalized}, ${otp}, ${expiresAt})
-    ON CONFLICT (email) DO UPDATE SET code = ${otp}, expires_at = ${expiresAt}
-  `
+  try {
+    await sql`
+      INSERT INTO otps (email, code, expires_at)
+      VALUES (${normalized}, ${otp}, ${expiresAt})
+      ON CONFLICT (email) DO UPDATE SET code = ${otp}, expires_at = ${expiresAt}
+    `
+  } catch (e: any) {
+    console.error('DB error in send-otp:', e.message)
+    return NextResponse.json({ error: 'Database error — check DATABASE_URL env var.' }, { status: 500 })
+  }
 
-  await sendOtpEmail(normalized, otp)
+  try {
+    await sendOtpEmail(normalized, otp)
+  } catch (e: any) {
+    console.error('Email error in send-otp:', e.message)
+    return NextResponse.json({ error: 'Failed to send email — check RESEND_API_KEY env var.' }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true })
 }
